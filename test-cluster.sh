@@ -1,8 +1,9 @@
 # Clone kubernetes if necessary
 if ! ls | grep kubernetes; then
-  git clone -b release-1.1 git@github.com:kubernetes/kubernetes.git
+  git clone -b release-1.1 https://github.com/kubernetes/kubernetes.git
   cd kubernetes
-  git fetch origin pull/7245/head:calico-vagrant
+  git remote add casey https://github.com/caseydavenport/kubernetes.git
+  git fetch --all
   cd ..
 fi
 
@@ -17,8 +18,8 @@ fi
 
 # Checkout Calico Vagrant Provisioner branch
 cd kubernetes
-git fetch origin pull/7245/head:calico-vagrant
-git checkout calico-vagrant
+git fetch --all
+git checkout casey/calico-vagrant-integration
 cd ..
 
 cd ~/jobs/Calico-Kubernetes-PR/workspace/dist
