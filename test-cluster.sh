@@ -17,10 +17,15 @@ fi
 
 # Checkout Calico Vagrant Provisioner branch
 cd kubernetes
+git fetch origin pull/7245/head:calico-vagrant
 git checkout calico-vagrant
 cd ..
 
-export ARTIFACT_URL=https://circle-artifacts.com/gh/projectcalico/calico-kubernetes/${ghprbPullId}/artifacts/0/home/ubuntu/calico-kubernetes/dist/calico_kubernetes
+cd ~/jobs/Calico-Kubernetes-PR/workspace/dist
+python3 -m http.server 8472 &
+cd ~/jobs/Kubernetes-Cluster/workspace
+
+export ARTIFACT_URL=http://127.0.0.1:8472/calico_kubernetes
 wget $ARTIFACT_URL
 export ARTIFACT_SHA=$(sha512sum ./calico_kubernetes)
 sudo rm calico_kubernetes
@@ -33,3 +38,6 @@ WORKERS=2; sed -i "s/NUM_MINIONS=[0-9]/NUM_MINIONS=${WORKERS}/" kubernetes/hack/
 KUBECONFIG=/var/lib/jenkins/.kube/config kubernetes/hack/conformance-test.sh 2>&1 | tee conformance.$(date +%FT%T%z).log
 
 NUM_MINIONS=2 KUBE_VERSION=v1.1.1 KUBERNETES_PROVIDER=vagrant NETWORK_PROVIDER=calico kubernetes/cluster/kube-down.sh
+
+# Close calico_kubernetes http server
+ps axf | grep "python3 -m http.server 8472" | grep -v grep | awk '{print "kill -9 " $1}' | sh
