@@ -21,15 +21,23 @@ cd kubernetes
 git reset --hard origin/master
 git checkout calico-vagrant
 
-# Binary should be built and hosted upstream.
+# Host new binary
+mkdir server && cd server
+cp -f ~/jobs/Calico-Kubernetes-Build/workspace/dist/calico_kubernetes ./
+python3 -m http.server &
+cd ..
+
+# Get URL and SHA512 of binary
 export ARTIFACT_URL=http://127.0.0.1:8472/calico_kubernetes
 wget $ARTIFACT_URL
 export ARTIFACT_SHA=$(sha512sum ./calico_kubernetes)
 sudo rm calico_kubernetes
+
+# Replace binary/shaw in salt files
 sed -i "s/https:\/\/github.com\/projectcalico\/calico-kubernetes\/releases\/download\/v0.6.1\/calico_kubernetes/${ARTIFACT_URL}/" ./cluster/saltbase/salt/calico/node.sls
 sed -i "s/38d1ae62cf2a8848946e0d7442e91bcdefd3ac8c2167cdbc6925c25e5eb9c8b60d1f348eb861de34f4167ef6e19842c37b18c5fc3804cfdca788a65d625c5502/${ARTIFACT_SHA}/" ./cluster/saltbase/salt/calico/node.sls
 
-# kube-down to purge any orphaned boxes
+# kube-down first to purge any orphaned boxes
 NUM_NODES=2 KUBE_VERSION=v1.1.1 KUBERNETES_PROVIDER=vagrant NETWORK_PROVIDER=calico ./cluster/kube-down.sh
 NUM_NODES=2 KUBE_VERSION=v1.1.1 KUBERNETES_PROVIDER=vagrant NETWORK_PROVIDER=calico ./cluster/kube-up.sh
 
@@ -39,6 +47,4 @@ KUBECONFIG=/var/lib/jenkins/.kube/config ./hack/conformance-test.sh 2>&1 | tee c
 
 # Clean-up
 NUM_NODES=2 KUBE_VERSION=v1.1.1 KUBERNETES_PROVIDER=vagrant NETWORK_PROVIDER=calico ./cluster/kube-down.sh
-
-# Close calico_kubernetes http server
 ps axf | grep "python3 -m http.server 8472" | grep -v grep | awk '{print "kill -9 " $1}' | sh
