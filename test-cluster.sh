@@ -10,7 +10,7 @@ fi
 # Build binaries if necessary
 if ! ls kubernetes| grep "_output"; then
   cd kubernetes
-  git checkout release-1.1
+  git checkout origin/release-1.1
   docker pull golang:1.4
   make quick-release
   cd ..
@@ -18,12 +18,13 @@ fi
 
 # Checkout Calico Vagrant Provisioner branch
 cd kubernetes
-git reset --hard origin/master
+git reset --hard origin/release-1.1
 git checkout calico-vagrant ./cluster/
+cd ..
 
 # Host new binary
 mkdir server && cd server
-cp -f ~/jobs/Calico-Kubernetes-Build/workspace/dist/calico_kubernetes ./
+cp -f /var/lib/jenkins/jobs/Calico-Kubernetes-Build/workspace/dist/calico_kubernetes ./
 python3 -m http.server 8472 &
 cd ..
 
@@ -36,10 +37,11 @@ rm calico_kubernetes
 # Replace binary/shaw in salt files
 export OLD_URL=https://github.com/projectcalico/calico-kubernetes/releases/download/v0.6.1/calico_kubernetes
 export OLD_SHA=38d1ae62cf2a8848946e0d7442e91bcdefd3ac8c2167cdbc6925c25e5eb9c8b60d1f348eb861de34f4167ef6e19842c37b18c5fc3804cfdca788a65d625c5502
-sed -i "s|$OLD_URL|$ARTIFACT_URL|g" ./cluster/saltbase/salt/calico/node.sls
-sed -i "s|$OLD_SHA|$ARTIFACT_SHA|g" ./cluster/saltbase/salt/calico/node.sls
+sed -i "s|$OLD_URL|$ARTIFACT_URL|g" kubernetes/cluster/saltbase/salt/calico/node.sls
+sed -i "s|$OLD_SHA|$ARTIFACT_SHA|g" kubernetes/cluster/saltbase/salt/calico/node.sls
 
 # kube-down first to purge any orphaned boxes
+cd kubernetes
 NUM_NODES=2 KUBE_VERSION=v1.1.1 KUBERNETES_PROVIDER=vagrant NETWORK_PROVIDER=calico ./cluster/kube-down.sh
 NUM_NODES=2 KUBE_VERSION=v1.1.1 KUBERNETES_PROVIDER=vagrant NETWORK_PROVIDER=calico ./cluster/kube-up.sh
 
@@ -50,3 +52,4 @@ KUBECONFIG=/var/lib/jenkins/.kube/config ./hack/conformance-test.sh 2>&1 | tee c
 # Clean-up
 NUM_NODES=2 KUBE_VERSION=v1.1.1 KUBERNETES_PROVIDER=vagrant NETWORK_PROVIDER=calico ./cluster/kube-down.sh
 ps axf | grep "python3 -m http.server 8472" | grep -v grep | awk '{print "kill -9 " $1}' | sh
+rm -rf ../server/
