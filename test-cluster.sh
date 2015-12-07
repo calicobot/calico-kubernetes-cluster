@@ -26,11 +26,9 @@ git checkout calico-vagrant ./cluster/
 cd ..
 
 # Host new binary
-mkdir server
-cd server
-cp -f /var/lib/jenkins/jobs/Calico-Kubernetes-Build/workspace/dist/calico_kubernetes ./
+cd calico-kubernetes/dist
 python3 -m http.server 8472 &
-cd ..
+cd ../..
 
 # Replace binary/sha in salt files
 export ARTIFACT_URL=http://172.25.22.97:8472/calico_kubernetes
@@ -45,7 +43,7 @@ cd kubernetes
 NUM_NODES=2 NUM_MINIONS=2 KUBE_VERSION=v1.1.2 KUBERNETES_PROVIDER=vagrant NETWORK_PROVIDER=calico ./cluster/kube-down.sh
 NUM_NODES=2 NUM_MINIONS=2 KUBE_VERSION=v1.1.2 KUBERNETES_PROVIDER=vagrant NETWORK_PROVIDER=calico ./cluster/kube-up.sh
 
-# Run Conformance
+# Run Conformance on 2 Nodes (some revisions of the script use `minions`)
 WORKERS=2; sed -i "s/NUM_NODES=[0-9]/NUM_NODES=${WORKERS}/" ./hack/conformance-test.sh
 WORKERS=2; sed -i "s/NUM_MINIONS=[0-9]/NUM_MINIONS=${WORKERS}/" ./hack/conformance-test.sh
 KUBECONFIG=/var/lib/jenkins/.kube/config ./hack/conformance-test.sh 2>&1 | tee conformance.log
@@ -56,12 +54,11 @@ export failures=$(tail -n 150 conformance.log | grep Summarizing | awk '{print $
 echo "Conformance Tests found $failures failures, expected $expected_failures"
 
 # Save the log
-if ! ls .. | grep conformance_logs; then   mkdir ../conformance_logs; fi
+if ! ls .. | grep conformance_logs; then mkdir ../conformance_logs; fi
 mv conformance.log ../conformance_logs/conformance.$(date +%FT%T%z).log
 
 # Clean-up
 NUM_NODES=2 NUM_MINIONS=2 KUBE_VERSION=v1.1.2 KUBERNETES_PROVIDER=vagrant NETWORK_PROVIDER=calico ./cluster/kube-down.sh
 ps axf | grep "python3 -m http.server 8472" | grep -v grep | awk '{print "kill -9 " $1}' | sh
-rm -rf ../server/
 
 exit $((failures!=expected_failures))
