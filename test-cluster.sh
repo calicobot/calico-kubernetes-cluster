@@ -3,7 +3,7 @@ export BUILD_ROOT=$PWD
 # Clone kubernetes if necessary
 if ! ls $BUILD_ROOT/cluster | grep kubernetes; then
   cd $BUILD_ROOT/cluster
-  git clone -b release-1.1 https://github.com/kubernetes/kubernetes.git $BUILD_ROOT/cluster/kubernetes
+  git clone -b release-1.1 https://github.com/kubernetes/kubernetes.git
   cd $BUILD_ROOT/cluster/kubernetes
   git remote add casey https://github.com/caseydavenport/kubernetes.git
   git fetch origin pull/7245/head:calico-vagrant
