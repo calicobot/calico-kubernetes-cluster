@@ -32,7 +32,7 @@ cd $BUILD_ROOT/calico-kubernetes/dist
 python3 -m http.server 8472 &
 
 # Replace binary/sha in salt files
-export ARTIFACT_URL=http://172.25.22.97:8472/calico
+export ARTIFACT_URL=http://destroyer:8472/calico
 export ARTIFACT_SHA=$(sha512sum $BUILD_ROOT/calico-kubernetes/dist/calico | cut -f 1 -d " ")
 export OLD_URL=https://github.com/projectcalico/calico-kubernetes/releases/download/v0.6.1/calico_kubernetes
 export OLD_SHA=38d1ae62cf2a8848946e0d7442e91bcdefd3ac8c2167cdbc6925c25e5eb9c8b60d1f348eb861de34f4167ef6e19842c37b18c5fc3804cfdca788a65d625c5502
